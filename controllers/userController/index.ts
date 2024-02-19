@@ -1,1 +1,1 @@
-export { createPost } from './createPost';
+export { register } from './register';
