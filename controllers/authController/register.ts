@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
+import { encrypt } from '../../utils/encrypt';
 
 const prisma = new PrismaClient();
 
@@ -14,9 +15,10 @@ export async function register(req: Request, res: Response) {
   const data: ReqUser = req.body;
 
   const userSchema = z.object({
-    username: z.string().min(1),
-    email: z.string().email().min(1),
-    password: z.string().min(4).max(50)
+    username: z.string().min(1, { message: 'Username must contain least 1 charactere.' }),
+    email: z.string().email().min(1, { message: 'Email can\'t be null.' }),
+    password: z.string().min(4, { message: 'Password must be between 4-32 characteres.' })
+      .max(32, { message: 'Password must be between 4-32 characteres.' })
   });
 
   const userIsValid = userSchema.safeParse(data);
@@ -51,7 +53,15 @@ export async function register(req: Request, res: Response) {
     });
   };
 
+  data.password = encrypt(data.password);
+
   const user = await prisma.user.create({ data });
 
-  return res.status(201).json({ user });
+  return res.status(201).json({
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email
+    }
+  });
 }
